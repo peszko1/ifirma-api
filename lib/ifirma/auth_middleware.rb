@@ -24,7 +24,7 @@ class Ifirma
     end
 
     def message_hash(env)
-      digest       = OpenSSL::Digest::Digest.new('sha1')
+      digest       = OpenSSL::Digest.new('sha1')
       data         = env[:url].to_s + username + "faktura" + env[:body].to_s
       message_hash = OpenSSL::HMAC.digest(digest, invoices_key, data)
       bin2hex(message_hash)

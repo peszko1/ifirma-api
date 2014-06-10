@@ -26,7 +26,8 @@ class Ifirma
   end
 
   def create_invoice(attrs)
-    response = post("/iapi/fakturakraj.json", normalize_attributes_for_request(attrs))
+    normalized_attrs = normalize_attributes_for_request(attrs)
+    response = post("/iapi/fakturakraj.json", normalized_attrs)
     Response.new(response.body["response"])
   end
 
@@ -38,6 +39,22 @@ class Ifirma
       response = Response.new(response.body)
     end
     response
+  end
+
+  def send_invoice(invoice_id)
+    json_invoice = get("/iapi/fakturakraj/#{invoice_id}.json")
+    response = Response.new(json_invoice.body["response"])
+    if response.success?
+      full_number = response.full_number.gsub('/', '_')
+      response = post("/iapi/fakturakraj/send/#{full_number}.json", {
+        "Tekst" => "Tresc wiadomosci",
+        "Przelew" => true,
+        "Pobranie" => true,
+        "MTransfer" => "mtransfer"
+        }
+      )
+      response = Response.new(response.body)
+    end
   end
 
   ATTRIBUTES_MAP = {
@@ -61,10 +78,13 @@ class Ifirma
       :name     => "Nazwa",
       :nip      => "NIP",
       :street   => "Ulica",
+      :country  => "Kraj",
       :zipcode  => "KodPocztowy",
       :city     => "Miejscowosc",
       :email    => "Email",
-      :phone    => "Telefon"
+      :phone    => "Telefon",
+      :eu_prefix => "PrefiksUE",
+      :natural_person => "OsobaFizyczna"
     },
     :items => {
       :items    => "Pozycje",
@@ -73,7 +93,8 @@ class Ifirma
       :price    => "CenaJednostkowa",
       :name     => "NazwaPelna",
       :unit     => "Jednostka",
-      :vat_type => "TypStawkiVat"
+      :vat_type => "TypStawkiVat",
+      :pkwiu    => "PKWiU"
     }
   }
 
@@ -126,7 +147,6 @@ private
         result[translated] = normalize_attribute(value, value_map[key])
       end
     end
-
     result
   end
 
